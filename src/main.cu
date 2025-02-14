@@ -3,7 +3,7 @@
 #include <iostream>
 #include <math.h>
 #include "util.h"
-#include "kernal.h"
+#include "kernel.h"
  
 // main routine that executes on the host
 int main(void){
