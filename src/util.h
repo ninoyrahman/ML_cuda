@@ -1,10 +1,22 @@
-// Kernel that executes on the CUDA device
-__global__ void square_array(float *a, float *b, float *c, int N){
+#include <cstdlib>
+#include <ctime>
 
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  
-  if (idx<N){ 
-    c[idx] = a[idx] + b[idx];
-  }
+// random matrix
+void random_matrix(float *a, int a_row, int a_col){
+  std::srand(std::time({}));
+  for (int i=0; i<a_row; i++){ 
+    for (int j=0; j<a_col; j++){ 
+      a[i * a_row + j] = (float(rand()) / RAND_MAX) - 0.5;
+    }
+  }  
+}
 
+// print matrix
+void print_matrix(float *a, int a_row, int a_col){
+  for (int i=0; i<a_row; i++){ 
+    for (int j=0; j<a_col; j++){ 
+      std::cout << "(" << i << "," << j << ") " << a[i * a_row + j] << " ";
+    }
+    std::cout << std::endl;
+  }  
 }
