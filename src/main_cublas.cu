@@ -23,7 +23,6 @@ int main(void){
   const int N1 = 4096; // matC row/matA row number
   const int N2 = 2048; // matC column/matB column number
   const int N3 = 1024;    // matB row/matA column number
-  const int nthreads = 32; // number of threads
 
   size_t size_matA = N1 * N3 * sizeof(float);
   size_t size_matB = N3 * N2 * sizeof(float);
@@ -54,14 +53,10 @@ int main(void){
   std::cout << "time elapsed(copy to device) = " << et << std::endl;
 
   // Do calculation on device
-  dim3 threadsPerBlock(nthreads, nthreads);
-  dim3 blocksPerGrid((int)ceil(N1 / threadsPerBlock.x), (int)ceil(N2 / threadsPerBlock.y));
 
   std::cout << " A matrix dims = (" << N1 << ", " << N3 << ")" << std::endl;
   std::cout << " B matrix dims = (" << N3 << ", " << N2 << ")" << std::endl;
-  std::cout << " C matrix dims = (" << N1 << ", " << N2 << ")" << std::endl;     
-  std::cout << " thread per block = (" << threadsPerBlock.x << ", " << threadsPerBlock.y << ")" << std::endl;
-  std::cout << " block number = (" << blocksPerGrid.x << ", " << blocksPerGrid.y << ")" << std::endl;
+  std::cout << " C matrix dims = (" << N1 << ", " << N2 << ")" << std::endl;
   
   // gpu matrix multiplication
   cudaEventRecord(start);
