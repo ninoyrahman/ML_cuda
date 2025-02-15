@@ -10,9 +10,9 @@ int main(void){
 
   float *matA_h, *matB_h, *matC_h;  // Pointer to host & device arrays
   float *matA_d, *matB_d, *matC_d;  // Pointer to host & device arrays
-  const int N1 = 8; // matC row/matA row number
-  const int N2 = 8; // matC column/matB column number
-  const int N3 = 8; // matB row/matA column number
+  const int N1 = 1024; // matC row/matA row number
+  const int N2 = 1024; // matC column/matB column number
+  const int N3 = 1024; // matB row/matA column number
   size_t size_matA = N1 * N3 * sizeof(float);
   size_t size_matB = N3 * N2 * sizeof(float);
   size_t size_matC = N1 * N2 * sizeof(float);
@@ -33,7 +33,7 @@ int main(void){
   cudaMemcpy(matB_d, matB_h, size_matB, cudaMemcpyHostToDevice);
   
   // Do calculation on device
-  dim3 threadsPerBlock(4, 4);
+  dim3 threadsPerBlock(64, 64);
   dim3 blocksPerGrid(N1 / threadsPerBlock.x, N2 / threadsPerBlock.y);
 
   std::cout << " thread per block = (" << threadsPerBlock.x << ", " << threadsPerBlock.y << ")" << std::endl;
@@ -46,7 +46,7 @@ int main(void){
   cudaMemcpy(matC_h, matC_d, size_matC, cudaMemcpyDeviceToHost);
   
   // Print results
-  print_matrix(matC_h, N1, N2);
+  // print_matrix(matC_h, N1, N2);
   
   // Cleanup
   delete [] matA_h;
