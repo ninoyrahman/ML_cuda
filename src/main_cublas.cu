@@ -9,11 +9,20 @@
 // main routine that executes on the host
 int main(void){
 
+  // cublas handle
+  cublasHandle_t handle;
+  cublasCreate(&handle);
+
+  // scaling factor
+  float alpha = 1.0f;
+  float beta  = 0.0f;  
+
   float *matA_h, *matB_h, *matC_h;  // Pointer to host & device arrays
   float *matA_d, *matB_d, *matC_d;  // Pointer to host & device arrays
-  const int N1 = 1024; // matC row/matA row number
+  const int N1 = 4096; // matC row/matA row number
   const int N2 = 2048; // matC column/matB column number
-  const int N3 = 512;    // matB row/matA column number
+  const int N3 = 1024;    // matB row/matA column number
+  const int nthreads = 32; // number of threads
 
   size_t size_matA = N1 * N3 * sizeof(float);
   size_t size_matB = N3 * N2 * sizeof(float);
@@ -22,6 +31,8 @@ int main(void){
   matA_h  = new float[N1 * N3];    // Allocate array on host
   matB_h  = new float[N3 * N2];    // Allocate array on host
   matC_h  = new float[N1 * N2];    // Allocate array on host
+
+  float *matCr_h  = new float[N1 * N2];    // Allocate array on host
   
   cudaMalloc((void **) &matA_d, size_matA);   // Allocate array on device
   cudaMalloc((void **) &matB_d, size_matB);   // Allocate array on device
@@ -30,24 +41,19 @@ int main(void){
   // Initialize host array and copy it to CUDA device
   random_matrix(matA_h, N1, N3);
   random_matrix(matB_h, N3, N2); 
-
-  // transpose matrix and copy transpose matrix to device
-  float *matT_h  = new float[N1 * N3];    // Allocate array on host
-  transpose_matrix(matA_h, matT_h, N1, N3);
   
   // copy data from host to device
   float et;
   cudaEvent_t start, stop;
   cudaEventCreate(&start); cudaEventCreate(&stop);
   cudaEventRecord(start);
-  // cudaMemcpy(matA_d, matA_h, size_matA, cudaMemcpyHostToDevice); // copy matA to device
+  cudaMemcpy(matA_d, matA_h, size_matA, cudaMemcpyHostToDevice); // copy matA to device
   cudaMemcpy(matB_d, matB_h, size_matB, cudaMemcpyHostToDevice); // copy matB to device
-  cudaMemcpy(matA_d, matT_h, size_matA, cudaMemcpyHostToDevice); // copy matA transpose to device
   cudaEventRecord(stop); cudaEventSynchronize(stop); cudaEventElapsedTime(&et, start, stop);
   std::cout << "time elapsed(copy to device) = " << et << std::endl;
 
   // Do calculation on device
-  dim3 threadsPerBlock(16, 16);
+  dim3 threadsPerBlock(nthreads, nthreads);
   dim3 blocksPerGrid((int)ceil(N1 / threadsPerBlock.x), (int)ceil(N2 / threadsPerBlock.y));
 
   std::cout << " A matrix dims = (" << N1 << ", " << N3 << ")" << std::endl;
@@ -58,18 +64,25 @@ int main(void){
   
   // gpu matrix multiplication
   cudaEventRecord(start);
-  // mat_mul <<< blocksPerGrid, threadsPerBlock >>> (matA_d, matB_d, matC_d, N1, N2, N3);
-  mat_mul_transpose <<< blocksPerGrid, threadsPerBlock >>> (matA_d, matB_d, matC_d, N1, N2, N3);
+  cublasSgemm(handle,
+    CUBLAS_OP_T, CUBLAS_OP_T,
+    N1, N2, N3,
+    &alpha,
+    matA_d, N3,
+    matB_d, N2,
+    &beta,
+    matC_d, N1);
   cudaEventRecord(stop); cudaEventSynchronize(stop); cudaEventElapsedTime(&et, start, stop);
   std::cout << "time elapsed(kernel) = " << et << std::endl;
 
   // Retrieve result from device and store it in host array
   cudaEventRecord(start);
-  cudaMemcpy(matC_h, matC_d, size_matC, cudaMemcpyDeviceToHost);
+  cudaMemcpy(matCr_h, matC_d, size_matC, cudaMemcpyDeviceToHost);
   cudaEventRecord(stop); cudaEventSynchronize(stop); cudaEventElapsedTime(&et, start, stop);
   std::cout << "time elapsed(copy from device) = " << et << std::endl;
 
   // cpu matrix multiplication
+  rearrange_matrix(matCr_h, matC_h, N1, N2);
   mat_mul_varify(matA_h, matB_h, matC_h, N1, N2, N3);
   
   // Print results
@@ -79,7 +92,7 @@ int main(void){
   delete [] matA_h;
   delete [] matB_h;
   delete [] matC_h;
-  delete [] matT_h;
+  delete [] matCr_h;
   cudaFree(matA_d);
   cudaFree(matB_d);
   cudaFree(matC_d);

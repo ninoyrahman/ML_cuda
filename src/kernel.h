@@ -28,11 +28,11 @@ __global__ void mat_mul_transpose(const float *a, const float *b, float *c, int 
   
   int row = blockIdx.x * blockDim.x + threadIdx.x;
   int col = blockIdx.y * blockDim.y + threadIdx.y;
-    
+  
   float tmp = 0;
   for (int i = 0; i < b_row; i++){
     tmp += a[i * c_row + row] * b[i * c_col + col];
   }
   c[row * c_col + col] = tmp;
-  
+
 }

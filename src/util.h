@@ -14,9 +14,9 @@ void random_matrix(float *a, int a_row, int a_col){
 
 // transpose matrix
 void transpose_matrix(const float *a, float *a_t, int a_row, int a_col){
-  for (int i=0; i<a_row; i++){ 
-    for (int j=0; j<a_col; j++){ 
-      a_t[j * a_row + i] = a[i * a_col + j];
+  for (int row=0; row<a_row; row++){ 
+    for (int col=0; col<a_col; col++){ 
+      a_t[col * a_row + row] = a[row * a_col + col];
     }
   }  
 }
@@ -43,11 +43,19 @@ void mat_mul_varify(const float *a, const float *b, const float *c, int c_row, i
       for (int i = 0; i < b_row; i++){
         tmp += a[row * b_row + i] * b[i * c_col + col];
       }
-      // printf("%d %d %f %f\n", row, col, tmp, c[row * c_col + col]);
+      // printf("%d %d %f %f", row, col, tmp, c[row * c_col + col]);
       diff = max(max(std::fabs(tmp - c[row * c_col + col]), 1e-6), diff);
     }
   }
   printf("max diff = %f\n", diff);
 
 }
-  
+ 
+// rearrange output matrix of cublasSgemm
+void rearrange_matrix(const float *c, float *c_r, int c_row, int c_col){
+  for (int row = 0; row < c_row; row++){
+    for (int col = 0; col < c_col; col++){
+      c_r[row * c_col + col] = c[col * c_row + row];
+    }
+  }  
+}
