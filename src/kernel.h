@@ -1,3 +1,14 @@
+// Kernel that print vector
+__global__ void print_vector_device(const float *a, int n){
+
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if (idx < n){
+    printf("(%d) %f ", idx, a[idx]);
+  }
+  
+}
+
 // Kernel that executes on the CUDA device
 __global__ void sum_array(float *a, float *b, float *c, int N){
 
