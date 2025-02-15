@@ -10,6 +10,7 @@
 int main(void){
 
   // cublas handle
+  cublasStatus_t status;
   cublasHandle_t handle;
   cublasCreate(&handle);
 
@@ -64,7 +65,7 @@ int main(void){
   
   // gpu matrix multiplication
   cudaEventRecord(start);
-  cublasSgemm(handle,
+  status = cublasSgemm(handle,
     CUBLAS_OP_T, CUBLAS_OP_T,
     N1, N2, N3,
     &alpha,
@@ -74,6 +75,9 @@ int main(void){
     matC_d, N1);
   cudaEventRecord(stop); cudaEventSynchronize(stop); cudaEventElapsedTime(&et, start, stop);
   std::cout << "time elapsed(kernel) = " << et << std::endl;
+
+  if (status != CUBLAS_STATUS_SUCCESS) 
+    printf("cublasSgemm returned error code %d\n", status);
 
   // Retrieve result from device and store it in host array
   cudaEventRecord(start);
