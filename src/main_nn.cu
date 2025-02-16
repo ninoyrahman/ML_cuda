@@ -14,10 +14,10 @@ int main(void){
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // matrix and vector size
-  const int Ns = 2000; // matB row/matA column number
+  const int Ns = 50; // matB row/matA column number
   const int N0 = 784;  // matC row/matA row number
-  const int N1 = 32;   // matC column/matB column number
-  const int N2 = 16;   // matB row/matA column number
+  const int N1 = 256;   // matC column/matB column number
+  const int N2 = 128;   // matB row/matA column number
   const int N3 = 10;   // matB row/matA column number
 
   // allocate on host
@@ -111,7 +111,8 @@ int main(void){
   //////////////////////////////////////////////////////////////////////////////////////////////////////////  
 
   // forward propagation
-  compute_nn(matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, Ns, N0, N1, N2, N3);
+  float lr = 0.1;
+  compute_nn(lr, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, Ns, N0, N1, N2, N3);
 
   // Retrieve result from device and store it in host array
   cudaMemcpy(matw1_h, matw1_d, size_matw1, cudaMemcpyDeviceToHost);
@@ -130,12 +131,17 @@ int main(void){
   //////////////////////////////////////////////////////////////////////////////////////////////////////////    
   
   // Cleanup
+  delete [] matX_h;
+  delete [] matY_h;
   delete [] matw1_h;
   delete [] matw2_h;
   delete [] matw3_h;
   delete [] vecb1_h;
   delete [] vecb2_h;
   delete [] vecb3_h;
+
+  cudaFree(matX_d);
+  cudaFree(matY_d);
   cudaFree(matw1_d);
   cudaFree(matw2_d);
   cudaFree(matw3_d);
