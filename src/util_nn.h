@@ -13,7 +13,6 @@
 #include "cublas_v2.h"
 #include <iostream>
 #include "math.h"
-#include "test.h"
 
 /**
  * @brief kernal for ReLU
@@ -233,7 +232,7 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
             a3_hd[col * N3 + row] = exp((double)a3_h[col * N3 + row]);
             sum_exp += a3_hd[col * N3 + row];
             if(a3_h[col * N3 + row] > 709.782f) {
-                printf("z3: "); test_value(z3, N3 * Ns);
+                // printf("z3: "); test_value(z3, N3 * Ns);
                 perror("overflow while exp compute");
                 exit(1);
             }
