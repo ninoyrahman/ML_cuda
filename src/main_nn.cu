@@ -16,9 +16,11 @@ int main(void){
   // matrix and vector size
   const int Ns = 50; // matB row/matA column number
   const int N0 = 784;  // matC row/matA row number
-  const int N1 = 256;   // matC column/matB column number
-  const int N2 = 128;   // matB row/matA column number
+  const int N1 = 512;   // matC column/matB column number
+  const int N2 = 256;   // matB row/matA column number
   const int N3 = 10;   // matB row/matA column number
+
+  int epoch = 2;
 
   // allocate on host
 
@@ -83,12 +85,12 @@ int main(void){
   std::cout << " b3 vector dims = (" << N3 << ")" << std::endl;
 
   // Initialize host array and copy it to CUDA device
-  random_matrix(matX_h, N0, Ns);
-  random_matrix(matY_h, N3, Ns);
+  random_matrix(matX_h, N0, Ns, 0.0f);
+  random_matrix(matY_h, N3, Ns, 0.0f);
 
-  random_matrix(matw1_h, N1, N0);
-  random_matrix(matw2_h, N2, N1);
-  random_matrix(matw3_h, N3, N2);
+  random_matrix(matw1_h, N1, N0, 0.5f);
+  random_matrix(matw2_h, N2, N1, 0.5f);
+  random_matrix(matw3_h, N3, N2, 0.5f);
 
   random_vector(vecb1_h, N1);
   random_vector(vecb2_h, N2);
@@ -112,7 +114,7 @@ int main(void){
 
   // forward propagation
   float lr = 0.1;
-  compute_nn(lr, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, Ns, N0, N1, N2, N3);
+  compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, Ns, N0, N1, N2, N3);
 
   // Retrieve result from device and store it in host array
   cudaMemcpy(matw1_h, matw1_d, size_matw1, cudaMemcpyDeviceToHost);
@@ -124,7 +126,8 @@ int main(void){
   cudaMemcpy(vecb3_h, vecb3_d, size_vecb3, cudaMemcpyDeviceToHost);
 
   // Print results
-  print_matrix(matw3_h, N3, N2);
+  print_vector(vecb3_h, N3);
+  // print_matrix(matw3_h, N3, N2);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////finalization//////////////////////////////////////////////////////////

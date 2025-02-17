@@ -30,7 +30,7 @@
  * @param N2[in] second hidden layer size
  * @param N3[in] output label size
  */
-void compute_nn(float lr, float *w1, float *w2, float *w3, float *b1, float *b2, float *b3, float *X, float *Y, int Ns, int N0, int N1, int N2, int N3){
+void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1, float *b2, float *b3, float *X, float *Y, int Ns, int N0, int N1, int N2, int N3){
 
     // Pointer to device arrays
     float *a1, *a2, *a3;
@@ -59,31 +59,28 @@ void compute_nn(float lr, float *w1, float *w2, float *w3, float *b1, float *b2,
     cudaMalloc((void **) &db2, N2 * sizeof(float));
     cudaMalloc((void **) &db3, N3 * sizeof(float));
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // forward propagation  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    for (int i = 0; i < epoch; i++){
 
-    forward_propagation(a1, a2, a3, z1, z2, z3, 
-        w1, w2, w3, b1, b2, b3, X, 
-        Ns, N0, N1, N2, N3);
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // backward propagation  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    backward_propagation(dw1, dw2, dw3, db1, db2, db3,
-        w1, w2, w3,
-        a1, a2, a3, z1, z2, z3,
-        X, Y,
-        Ns, N0, N1, N2, N3);
+        printf("epoch = %d\n", i);
         
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // update weights and biases  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // forward propagationx
+        forward_propagation(a1, a2, a3, z1, z2, z3, 
+            w1, w2, w3, b1, b2, b3, X, 
+            Ns, N0, N1, N2, N3);
 
-    update_parameter(w1, w2, w3, b1, b2, b3,
-        lr, dw1, dw2, dw3, db1, db2, db3, 
-        Ns, N0, N1, N2, N3);
+        // backward propagation
+        backward_propagation(dw1, dw2, dw3, db1, db2, db3,
+            w1, w2, w3,
+            a1, a2, a3, z1, z2, z3,
+            X, Y,
+            Ns, N0, N1, N2, N3);
+            
+        // update weights and biases
+        update_parameter(w1, w2, w3, b1, b2, b3,
+            lr, dw1, dw2, dw3, db1, db2, db3, 
+            Ns, N0, N1, N2, N3);
+
+    }
 
     // free memory on device
     cudaFree(a1); cudaFree(a2); cudaFree(a3);

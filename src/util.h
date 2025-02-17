@@ -3,12 +3,12 @@
 #include <cassert>
 
 // random matrix (column first)
-void random_matrix(float *a, const int a_row, const int a_col){
+void random_matrix(float *a, const int a_row, const int a_col, const float shift){
   std::srand(std::time({}));
   for (int j=0; j<a_col; j++){
     for (int i=0; i<a_row; i++){ 
       // a[i * a_col + j] = (float(rand()) / RAND_MAX) - 0.5;
-      a[j * a_row + i] = (float(rand()) / RAND_MAX) - 0.5;
+      a[j * a_row + i] = (float(rand()) / RAND_MAX) - shift;
     }
   }
 }
@@ -31,9 +31,8 @@ void setvalue_vector(float *a, const int n, const float value){
 
 // print vector
 void print_vector(float *a, const int n){
-  std::srand(std::time({}));
   for (int i=0; i<n; i++){    
-    printf("(%d) %f ", i, a[i]);
+    printf("(%d) %.3e ", i, a[i]);
   }
   printf("\n");
 }
@@ -51,7 +50,8 @@ void transpose_matrix(const float *a, float *a_t, int a_row, int a_col){
 void print_matrix(const float *a, int a_row, int a_col){
   for (int i=0; i<a_row; i++){
     for (int j=0; j<a_col; j++){
-      std::cout << "(" << i << "," << j << ") " << a[j * a_row + i] << " ";
+      printf("(%d, %d) %.3e ", i, j, a[j * a_row + i]);
+      // std::cout << "(" << i << "," << j << ") " << a[j * a_row + i] << " ";
     }
     std::cout << std::endl;
   }  
