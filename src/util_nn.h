@@ -36,8 +36,7 @@ __global__ void ReLU(const float *z, float *a, int n){
  */
 __global__ void softmax(const float *z, float *a, int n){
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if(idx < n)
-        a[idx] = exp(z[idx]);
+    a[idx] = exp(z[idx]);
 }
 
 /**
@@ -52,7 +51,7 @@ __global__ void softmax2(const float *tmp, const float *sumexp, float *a, int m,
     int row = blockIdx.x * blockDim.x + threadIdx.x;
     int col = blockIdx.y * blockDim.y + threadIdx.y;
     if (tmp[col * m + row] > fmaxf(sumexp[col], 1e-6))
-        printf("(%d, %d) %f %f", row, col, tmp[col * m + row], fmaxf(sumexp[col], 1e-6));
+        printf("(%d, %d) %f %f %f ", row, col, tmp[col * m + row], sumexp[col], fmaxf(sumexp[col], 1e-6));
     a[col * m + row] = tmp[col * m + row] / fmaxf(sumexp[col], 1e-6);
 }
 
@@ -102,20 +101,8 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
     cudaMalloc((void **) &Vone_d, size_Vone);
     cudaMemcpy(Vone_d, Vone_h, size_Vone, cudaMemcpyHostToDevice);
 
-    float *Vone1_h  = new float[N3];
-    for (int i = 0; i < N3; i++)
-        Vone1_h[i] = 1.0f;
-
-    float *Vone1_d;
-    size_t size_Vone1 = N3 * sizeof(float);
-    cudaMalloc((void **) &Vone1_d, size_Vone1);
-    cudaMemcpy(Vone1_d, Vone1_h, size_Vone1, cudaMemcpyHostToDevice);
-
-    float *sumexp;
-    cudaMalloc((void **) &sumexp, Ns * sizeof(float));
-
-    float *tmp3;
-    cudaMalloc((void **) &tmp3, N3 * Ns * sizeof(float));
+    float *a3_h  = new float[N3 * Ns];
+    double *a3_hd = new double[N3 * Ns];
 
     cublasCreate(&handle);    
 
@@ -187,30 +174,31 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
     if (status != CUBLAS_STATUS_SUCCESS)
         printf("cublasSger returned error code %d\n", status);
 
-    // tmp3[N3, Ns] = softmax(z3[N3, Ns])
-    blocksPerGrid.x = (int)ceil(N3 * Ns / threadsPerBlock.x);
-    softmax <<< blocksPerGrid, threadsPerBlock >>> (z3, tmp3, N3 * Ns);
+    // a3[N3, Ns] = softmax(z3[N3, Ns])
+    cudaMemcpy(a3_h, z3, N3 * Ns * sizeof(float), cudaMemcpyDeviceToHost); // copy from device to host
 
-    // sumexp[Ns] = tmp3[N3, Ns].T * Vone1[N3]
-    status = cublasSgemv(handle, CUBLAS_OP_T,
-        N3, Ns, // m, n
-        &alpha,
-        tmp3, N3, // A(m, n)=tmp3
-        Vone1_d, 1, // x(m)=Vone1
-        &beta,
-        sumexp, 1); // y(n)=sumexp
-    if (status != CUBLAS_STATUS_SUCCESS)
-        printf("cublasSger returned error code %d\n", status);        
+    double sum_exp;
+    for (int col = 0; col < Ns; col++){
+        sum_exp = 0e0;
+        for (int row = 0; row < N3; row++){
+            a3_hd[col * N3 + row] = exp((double)a3_h[col * N3 + row]);
+            sum_exp += a3_hd[col * N3 + row];
+            if(a3_h[col * N3 + row] > 709.782f) {
+                perror("overflow while exp compute");
+                exit(1);
+            }
+        }
+        sum_exp = max(sum_exp, 1e-6);
+        for (int row = 0; row < N3; row++){
+            a3_h[col * N3 + row] = (float)(a3_hd[col * N3 + row] / sum_exp);
+        }
+    }
 
-    // a3[N3, Ns] = softmax2(tmp3[N3, Ns])
-    blocksPerGrid2.x = (int)ceil(N3 / threadsPerBlock2.x);
-    blocksPerGrid2.y = (int)ceil(Ns / threadsPerBlock2.y);
-    softmax2 <<< blocksPerGrid2, threadsPerBlock2 >>> (tmp3, sumexp, a3, N3, Ns);
+    cudaMemcpy(a3, a3_h, N3 * Ns * sizeof(float), cudaMemcpyHostToDevice);
 
     // free memory
+    delete [] a3_h; delete [] a3_hd;
     delete [] Vone_h; cudaFree(Vone_d);
-    delete [] Vone1_h; cudaFree(Vone1_d);
-    cudaFree(tmp3); cudaFree(sumexp);
 }
 
 /**
