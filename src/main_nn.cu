@@ -5,6 +5,7 @@
 #include "cublas_v2.h"
 #include "util.h"
 #include "nn.h"
+#include "mnist.h"
 
 // main routine that executes on the host
 int main(void){
@@ -14,13 +15,14 @@ int main(void){
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // matrix and vector size
-  const int Ns = 50; // matB row/matA column number
+  const int Ns = 60000;   // matB row/matA column number
   const int N0 = 784;  // matC row/matA row number
-  const int N1 = 512;   // matC column/matB column number
-  const int N2 = 256;   // matB row/matA column number
+  const int N1 = 256;  // matC column/matB column number
+  const int N2 = 128;  // matB row/matA column number
   const int N3 = 10;   // matB row/matA column number
 
-  int epoch = 2;
+  float lr = 0.1; // learning rate
+  int epoch = 500;  // max iteration
 
   // allocate on host
 
@@ -72,6 +74,8 @@ int main(void){
   ////////////////////////////////////initialization////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  printf("initialization start\n");
+
   // print matrix size
   std::cout << " X matrix dims = (" << N0 << ", " << Ns << ")" << std::endl;
   std::cout << " Y matrix dims = (" << N0 << ", " << Ns << ")" << std::endl;
@@ -85,8 +89,24 @@ int main(void){
   std::cout << " b3 vector dims = (" << N3 << ")" << std::endl;
 
   // Initialize host array and copy it to CUDA device
-  random_matrix(matX_h, N0, Ns, 0.0f);
-  random_matrix(matY_h, N3, Ns, 0.0f);
+  // random_matrix(matX_h, N0, Ns, 0.0f);
+  // random_matrix(matY_h, N3, Ns, 0.0f);
+
+  // read mnist data
+  load_mnist();
+
+  // X[N0, Ns], train_image[Ns][N0]
+  // Y[N3, Ns], train_label[Ns]
+  for (int i = 0; i < Ns; i++){
+    for (int j = 0; j < N0; j++){
+      matX_h[j * Ns + i] = train_image[i][j];
+    }
+    
+    for (int j = 0; j < N3; j++){
+      matY_h[j * Ns + i] = 0.0f;
+      if (j == train_label[i]) matY_h[j * Ns + i] = 1.0f;
+    }
+  }  
 
   random_matrix(matw1_h, N1, N0, 0.5f);
   random_matrix(matw2_h, N2, N1, 0.5f);
@@ -108,12 +128,13 @@ int main(void){
   cudaMemcpy(vecb2_d, vecb2_h, size_vecb2, cudaMemcpyHostToDevice);
   cudaMemcpy(vecb3_d, vecb3_h, size_vecb3, cudaMemcpyHostToDevice);
 
+  printf("initialization end\n");
+
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////computation///////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////  
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // forward propagation
-  float lr = 0.1;
   compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, Ns, N0, N1, N2, N3);
 
   // Retrieve result from device and store it in host array
@@ -127,7 +148,9 @@ int main(void){
 
   // Print results
   print_vector(vecb3_h, N3);
-  // print_matrix(matw3_h, N3, N2);
+  // print_matrix(matX_h, N0, Ns);
+
+  printf("computation end\n");
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////finalization//////////////////////////////////////////////////////////
