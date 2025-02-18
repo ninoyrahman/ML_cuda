@@ -5,7 +5,8 @@
 #include "cublas_v2.h"
 #include "util.h"
 #include "nn.h"
-#include "mnist.h"
+#include "read.h"
+#include "test.h"
 
 // main routine that executes on the host
 int main(void){
@@ -17,9 +18,12 @@ int main(void){
   // matrix and vector size
   const int Ns = 60000;   // matB row/matA column number
   const int N0 = 784;  // matC row/matA row number
-  const int N1 = 256;  // matC column/matB column number
-  const int N2 = 128;  // matB row/matA column number
+  const int N1 = 32;  // matC column/matB column number
+  const int N2 = 16;  // matB row/matA column number
   const int N3 = 10;   // matB row/matA column number
+
+  const int Ntrain = 60000;
+  const int Ntest  = 10000;
 
   float lr = 0.1; // learning rate
   int epoch = 500;  // max iteration
@@ -27,6 +31,11 @@ int main(void){
   // allocate on host
 
   // data X, Y
+  int *x_train   = new int[N0 * Ntrain];
+  int *x_test    = new int[N0 * Ntest];
+  int *y_train   = new int[Ntrain];
+  int *y_test    = new int[Ntest];
+
   float *matX_h  = new float[N0 * Ns];
   float *matY_h  = new float[N3 * Ns];
 
@@ -93,20 +102,14 @@ int main(void){
   // random_matrix(matY_h, N3, Ns, 0.0f);
 
   // read mnist data
-  load_mnist();
+  read_mnist(matX_h, matY_h, x_train, x_test, y_test, y_train, N0, N3, Ntrain, Ntest);
 
-  // X[N0, Ns], train_image[Ns][N0]
-  // Y[N3, Ns], train_label[Ns]
-  for (int i = 0; i < Ns; i++){
-    for (int j = 0; j < N0; j++){
-      matX_h[j * Ns + i] = train_image[i][j];
-    }
-    
-    for (int j = 0; j < N3; j++){
-      matY_h[j * Ns + i] = 0.0f;
-      if (j == train_label[i]) matY_h[j * Ns + i] = 1.0f;
-    }
-  }  
+  // print data
+  for (int i=0; i<N0; i++) {
+    printf("%d ", (int)(matX_h[40000 * N0 + i] > 0.0f));
+      if ((i+1) % 28 == 0) putchar('\n');
+  }
+  printf("y=%d\n", y_train[40000]);
 
   random_matrix(matw1_h, N1, N0, 0.5f);
   random_matrix(matw2_h, N2, N1, 0.5f);
@@ -135,7 +138,9 @@ int main(void){
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // forward propagation
-  compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, Ns, N0, N1, N2, N3);
+  printf("computation start\n");
+  printf("b3= "); print_vector(vecb3_h, N3);
+  compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, matY_h, Ns, N0, N1, N2, N3);
 
   // Retrieve result from device and store it in host array
   cudaMemcpy(matw1_h, matw1_d, size_matw1, cudaMemcpyDeviceToHost);
@@ -147,8 +152,8 @@ int main(void){
   cudaMemcpy(vecb3_h, vecb3_d, size_vecb3, cudaMemcpyDeviceToHost);
 
   // Print results
-  print_vector(vecb3_h, N3);
-  // print_matrix(matX_h, N0, Ns);
+  printf("b3= "); print_vector(vecb3_h, N3);
+  // print_matrix(matw3_h, N3, N2);
 
   printf("computation end\n");
 
@@ -165,6 +170,10 @@ int main(void){
   delete [] vecb1_h;
   delete [] vecb2_h;
   delete [] vecb3_h;
+  delete [] x_train;
+  delete [] x_test;
+  delete [] y_train;
+  delete [] y_test;
 
   cudaFree(matX_d);
   cudaFree(matY_d);

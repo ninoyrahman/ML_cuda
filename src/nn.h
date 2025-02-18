@@ -16,6 +16,8 @@
 /**
  * @brief perform neural network
  * 
+ * @param lr learning rate
+ * @param epoch max number of epoch
  * @param w1[in out] weights from input layer to first hidden layer
  * @param w2[in out] weights from first hidden layer to second hidden layer
  * @param w3[in out] weights from second hidden layer to output layer
@@ -24,13 +26,14 @@
  * @param b3[in out] biases from second hidden layer to output layer
  * @param X[in] input training data
  * @param Y[in] output training data
+ * @param Y_h[in] output training data (host)
  * @param Ns[in] sample size
  * @param N0[in] input feature size
  * @param N1[in] first hidden layer size
  * @param N2[in] second hidden layer size
  * @param N3[in] output label size
  */
-void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1, float *b2, float *b3, float *X, float *Y, int Ns, int N0, int N1, int N2, int N3){
+void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1, float *b2, float *b3, float *X, float *Y, float *Y_h, int Ns, int N0, int N1, int N2, int N3){
 
     // Pointer to device arrays
     float *a1, *a2, *a3;
@@ -61,7 +64,7 @@ void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1,
 
     for (int i = 0; i < epoch; i++){
 
-        printf("epoch = %d\n", i);
+        if(i*10%epoch == 0) printf("===");
         
         // forward propagationx
         forward_propagation(a1, a2, a3, z1, z2, z3, 
@@ -80,7 +83,13 @@ void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1,
             lr, dw1, dw2, dw3, db1, db2, db3, 
             Ns, N0, N1, N2, N3);
 
+        // if (i % 10 == 0){
+            // float acc = get_accuracy(a3, Y_h, N3, Ns);
+            // printf("i=%d, acc=%.3f", i, acc);
+        // }
+
     }
+    printf("\n");
 
     // free memory on device
     cudaFree(a1); cudaFree(a2); cudaFree(a3);

@@ -13,6 +13,7 @@
 #include "cublas_v2.h"
 #include <iostream>
 #include "math.h"
+#include "test.h"
 
 /**
  * @brief kernal for ReLU
@@ -49,6 +50,30 @@ __global__ void dReLU(const float *z, float *da, int n){
 __global__ void clipping(float clip, float *a, int n){
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     a[idx] = fminf(fmaxf(a[idx], -clip), clip);
+}
+
+float get_accuracy(const float *a3_d, const float *Y_h, const int N3, const int Ns){
+
+    float *a3_h = new float[N3 * Ns];
+    int idx_a3;
+    int idx_Y;
+    float acc = 0.0f;
+    int size = 5;
+
+    // copy from device to host
+    cudaMemcpy(a3_h, a3_d, N3 * Ns * sizeof(float), cudaMemcpyDeviceToHost);
+    
+    for (int col = 0; col < size; col++){
+        idx_a3 = std::distance(a3_h + col * N3, std::max_element(a3_h + col * N3, a3_h + (col + 1) * N3 - 1));
+        idx_Y  = std::distance(Y_h  + col * N3, std::max_element(Y_h  + col * N3, Y_h  + (col + 1) * N3 - 1));
+        acc += 1.0f - (float)(idx_a3 == idx_Y); // true=1.0, false=0.0
+        // printf("(%d) %d %d\n", col, idx_Y, idx_a3);
+    }
+    acc = acc / (float)size;
+
+    // printf("acc=%.3f\n", acc);
+    delete [] a3_h;
+    return acc;
 }
 
 /**
@@ -163,9 +188,9 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
         z1, N1); // A(m x n)=z1
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSger returned error code %d\n", status);
-    // printf("w1: "); test_value(w1, N1 * N0);
-    // printf("X: "); test_value(X, N0 * Ns);
-    // printf("b1: "); test_value(b1, N1);
+    // printf("w1: "); test_value(w1, N1, N0);
+    // printf("X: "); test_value(X, N0, Ns);
+    // printf("b1: "); test_value(b1, N1, 1);
     // printf("z1: "); test_value(z1, N1 * Ns);
 
     // a1[N1, Ns] = ReLU(z1[N1, Ns])
@@ -190,9 +215,9 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
         z2, N2); // A(m x n)=z2
     if (status != CUBLAS_STATUS_SUCCESS)
         printf("cublasSger returned error code %d\n", status);
-    // printf("w2: "); test_value(w2, N2 * N1);
-    // printf("a1: "); test_value(a1, N1 * Ns);        
-    // printf("b2: "); test_value(b2, N2);
+    // printf("w2: "); test_value(w2, N2, N1);
+    // printf("a1: "); test_value(a1, N1, Ns);        
+    // printf("b2: "); test_value(b2, N2, 1);
     // printf("z2: "); test_value(z2, N2 * Ns);
 
     // a2[N2, Ns] = ReLU(z2[N2, Ns])
@@ -217,13 +242,13 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
         z3, N3); // A(m x n)=z3
     if (status != CUBLAS_STATUS_SUCCESS)
         printf("cublasSger returned error code %d\n", status);
-    // printf("w3: "); test_value(w3, N3 * N2);
-    // printf("a2: "); test_value(a2, N2 * Ns);
-    // printf("b3: "); test_value(b3, N3);
+    // printf("w3: "); test_value(w3, N3, N2);
+    // printf("a2: "); test_value(a2, N2, Ns);
+    // printf("b3: "); test_value(b3, N3, 1);
     // printf("z3: "); test_value(z3, N3 * Ns);
 
     // a3[N3, Ns] = softmax(z3[N3, Ns])
-    cudaMemcpy(a3_h, z3, N3 * Ns * sizeof(float), cudaMemcpyDeviceToHost); // copy from device to host
+    cudaMemcpy(a3_h, z3, N3 * Ns * sizeof(float), cudaMemcpyDeviceToHost); // copy from device to host  
 
     double sum_exp;
     for (int col = 0; col < Ns; col++){
@@ -248,7 +273,7 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
     }
 
     cudaMemcpy(a3, a3_h, N3 * Ns * sizeof(float), cudaMemcpyHostToDevice);
-    // printf("a3: "); test_value(a3, N3 * Ns);
+    // printf("a3: "); test_value(a3, N3, Ns);
 
     // free memory
     delete [] a3_h; delete [] a3_hd;
