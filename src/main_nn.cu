@@ -18,15 +18,15 @@ int main(void){
   // matrix and vector size
   const int Ns = 60000;   // matB row/matA column number
   const int N0 = 784;  // matC row/matA row number
-  const int N1 = 32;  // matC column/matB column number
-  const int N2 = 16;  // matB row/matA column number
+  const int N1 = 256;  // matC column/matB column number
+  const int N2 = 128;  // matB row/matA column number
   const int N3 = 10;   // matB row/matA column number
 
   const int Ntrain = 60000;
   const int Ntest  = 10000;
 
   float lr = 0.1; // learning rate
-  int epoch = 0;  // max iteration
+  int epoch = 500;  // max iteration
 
   // allocate on host
 
@@ -141,7 +141,7 @@ int main(void){
 
   // forward propagation
   printf("computation start\n");
-  printf("b3= "); print_vector(vecb3_h, N3);
+  // printf("b3= "); print_vector(vecb3_h, N3);
   compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, matY_h, Ns, N0, N1, N2, N3);
 
   // Retrieve result from device and store it in host array
@@ -154,7 +154,7 @@ int main(void){
   cudaMemcpy(vecb3_h, vecb3_d, size_vecb3, cudaMemcpyDeviceToHost);
 
   // Print results
-  printf("b3= "); print_vector(vecb3_h, N3);
+  // printf("b3= "); print_vector(vecb3_h, N3);
   // print_matrix(matw3_h, N3, N2);
 
   printf("computation end\n");

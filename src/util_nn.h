@@ -66,7 +66,7 @@ float get_accuracy(const float *a3_d, const float *Y_h, const int N3, const int 
     for (int col = 0; col < Ns; col++){
         idx_a3 = std::distance(a3_h + col * N3, std::max_element(a3_h + col * N3, a3_h + (col + 1) * N3 - 1));
         idx_Y  = std::distance(Y_h  + col * N3, std::max_element(Y_h  + col * N3, Y_h  + (col + 1) * N3 - 1));
-        acc += 1.0f - (float)(idx_a3 == idx_Y); // true=1.0, false=0.0
+        acc += (float)(idx_a3 == idx_Y); // true=1.0, false=0.0
         // if(col == 500) {
         //     for (int i = 0; i < N3; i++){
         //         printf("(%d) %.1f ", i,  a3_h[col * N3 + i]);
@@ -535,7 +535,7 @@ void update_parameter(float *w1, float *w2, float *w3, float *b1, float *b2, flo
 
     // printf("update\n");
 
-    gradient_clipping(1.0f, dw1, dw2, dw3, db1, db2, db3, N0, N1, N2, N3);
+    // gradient_clipping(1.0f, dw1, dw2, dw3, db1, db2, db3, N0, N1, N2, N3);
     // printf("w1: "); test_value(w1, N1 * N0);
 
     // w1[N1, N0] = w1[N1, N0] - lr * dw1[N1, N0]

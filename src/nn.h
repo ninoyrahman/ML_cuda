@@ -41,6 +41,8 @@ void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1,
     float *dw1, *dw2, *dw3;
     float *db1, *db2, *db3;
 
+    float acc;
+
     // size of vector
     size_t size_a1 = N1 * Ns * sizeof(float);
     size_t size_a2 = N2 * Ns * sizeof(float);
@@ -83,11 +85,16 @@ void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1,
             lr, dw1, dw2, dw3, db1, db2, db3, 
             Ns, N0, N1, N2, N3);
 
-        if (i % 10 == 0){
-            float acc = get_accuracy(a3, Y_h, N3, Ns);
-            printf("i=%d, acc=%.3f\n", i, acc);
+        if (i % 100 == 0){
+            acc = get_accuracy(a3, Y_h, N3, Ns);
+            printf("i=%d, accuracy=%.3f\n", i, acc);
         }
     }
+
+    forward_propagation(a1, a2, a3, z1, z2, z3, 
+        w1, w2, w3, b1, b2, b3, X, 
+        Ns, N0, N1, N2, N3);
+    printf("accuracy=%.3f\n", get_accuracy(a3, Y_h, N3, Ns));
 
     // free memory on device
     cudaFree(a1); cudaFree(a2); cudaFree(a3);
