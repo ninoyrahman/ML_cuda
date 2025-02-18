@@ -58,18 +58,23 @@ float get_accuracy(const float *a3_d, const float *Y_h, const int N3, const int 
     int idx_a3;
     int idx_Y;
     float acc = 0.0f;
-    int size = 5;
+    // int size = 5;
 
     // copy from device to host
     cudaMemcpy(a3_h, a3_d, N3 * Ns * sizeof(float), cudaMemcpyDeviceToHost);
     
-    for (int col = 0; col < size; col++){
+    for (int col = 0; col < Ns; col++){
         idx_a3 = std::distance(a3_h + col * N3, std::max_element(a3_h + col * N3, a3_h + (col + 1) * N3 - 1));
         idx_Y  = std::distance(Y_h  + col * N3, std::max_element(Y_h  + col * N3, Y_h  + (col + 1) * N3 - 1));
         acc += 1.0f - (float)(idx_a3 == idx_Y); // true=1.0, false=0.0
-        // printf("(%d) %d %d\n", col, idx_Y, idx_a3);
+        // if(col == 500) {
+        //     for (int i = 0; i < N3; i++){
+        //         printf("(%d) %.1f ", i,  a3_h[col * N3 + i]);
+        //     }
+        //     printf("(%d) %d %d\n", col, idx_Y, idx_a3);
+        // }
     }
-    acc = acc / (float)size;
+    acc = acc / (float)Ns;
 
     // printf("acc=%.3f\n", acc);
     delete [] a3_h;

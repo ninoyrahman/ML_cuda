@@ -62,12 +62,12 @@ void read_mnist(float *X_h, float *Y_h, int *X_train, int *X_test, int *Y_test, 
     // Y[N3, Ns], y_train[Ns]
     for (int i = 0; i < Ntrain; i++){
         for (int j = 0; j < nfeat; j++){
-        X_h[i * nfeat + j] = (float)(X_train[i * nfeat + j] / 255.0f);
+            X_h[i * nfeat + j] = (float)(X_train[i * nfeat + j] / 255.0f);
         }
         
         for (int j = 0; j < nlabel; j++){
-        Y_h[i * nlabel + j] = 0.0f;
-        if (j == Y_train[i]) Y_h[i * nlabel + j] = 1.0f;
+            Y_h[i * nlabel + j] = 0.0f;
+            if (j == Y_train[i]) Y_h[i * nlabel + j] = 1.0f;
         }
     }   
 }

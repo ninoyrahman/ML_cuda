@@ -64,7 +64,7 @@ void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1,
 
     for (int i = 0; i < epoch; i++){
 
-        if(i*10%epoch == 0) printf("===");
+        // if(i*10%epoch == 0) printf("===");
         
         // forward propagationx
         forward_propagation(a1, a2, a3, z1, z2, z3, 
@@ -83,13 +83,11 @@ void compute_nn(float lr, int epoch, float *w1, float *w2, float *w3, float *b1,
             lr, dw1, dw2, dw3, db1, db2, db3, 
             Ns, N0, N1, N2, N3);
 
-        // if (i % 10 == 0){
-            // float acc = get_accuracy(a3, Y_h, N3, Ns);
-            // printf("i=%d, acc=%.3f", i, acc);
-        // }
-
+        if (i % 10 == 0){
+            float acc = get_accuracy(a3, Y_h, N3, Ns);
+            printf("i=%d, acc=%.3f\n", i, acc);
+        }
     }
-    printf("\n");
 
     // free memory on device
     cudaFree(a1); cudaFree(a2); cudaFree(a3);

@@ -26,7 +26,7 @@ int main(void){
   const int Ntest  = 10000;
 
   float lr = 0.1; // learning rate
-  int epoch = 500;  // max iteration
+  int epoch = 0;  // max iteration
 
   // allocate on host
 
@@ -105,11 +105,13 @@ int main(void){
   read_mnist(matX_h, matY_h, x_train, x_test, y_test, y_train, N0, N3, Ntrain, Ntest);
 
   // print data
+  int idx = 41576;
   for (int i=0; i<N0; i++) {
-    printf("%d ", (int)(matX_h[40000 * N0 + i] > 0.0f));
+    printf("%d ", (int)(matX_h[idx * N0 + i] > 0.0f));
       if ((i+1) % 28 == 0) putchar('\n');
   }
-  printf("y=%d\n", y_train[40000]);
+  int idx_Y = std::distance(matY_h  + idx * N3, std::max_element(matY_h + idx * N3, matY_h  + (idx + 1) * N3 - 1));
+  printf("y=%d, %d\n", y_train[idx], idx_Y);
 
   random_matrix(matw1_h, N1, N0, 0.5f);
   random_matrix(matw2_h, N2, N1, 0.5f);
