@@ -13,7 +13,7 @@
 #include "cublas_v2.h"
 #include <iostream>
 #include "math.h"
-#include "test.h"
+// #include "test.h"
 
 /**
  * @brief kernal for ReLU
@@ -67,16 +67,9 @@ float get_accuracy(const float *a3_d, const float *Y_h, const int N3, const int 
         idx_a3 = std::distance(a3_h + col * N3, std::max_element(a3_h + col * N3, a3_h + (col + 1) * N3 - 1));
         idx_Y  = std::distance(Y_h  + col * N3, std::max_element(Y_h  + col * N3, Y_h  + (col + 1) * N3 - 1));
         acc += (float)(idx_a3 == idx_Y); // true=1.0, false=0.0
-        // if(col == 500) {
-        //     for (int i = 0; i < N3; i++){
-        //         printf("(%d) %.1f ", i,  a3_h[col * N3 + i]);
-        //     }
-        //     printf("(%d) %d %d\n", col, idx_Y, idx_a3);
-        // }
     }
     acc = acc / (float)Ns;
 
-    // printf("acc=%.3f\n", acc);
     delete [] a3_h;
     return acc;
 }

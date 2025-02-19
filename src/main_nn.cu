@@ -6,7 +6,7 @@
 #include "util.h"
 #include "nn.h"
 #include "read.h"
-#include "test.h"
+// #include "test.h"
 
 // main routine that executes on the host
 int main(void){
@@ -26,7 +26,7 @@ int main(void){
   const int Ntest  = 10000;
 
   float lr = 0.1; // learning rate
-  int epoch = 500;  // max iteration
+  int epoch = 300;  // max iteration
 
   // allocate on host
 
@@ -38,6 +38,8 @@ int main(void){
 
   float *matX_h  = new float[N0 * Ns];
   float *matY_h  = new float[N3 * Ns];
+  float *matX1_h  = new float[N0 * Ns];
+  float *matY1_h  = new float[N3 * Ns];
 
   // weights
   float *matw1_h  = new float[N1 * N0];
@@ -50,13 +52,15 @@ int main(void){
   float *vecb3_h  = new float[N3];
   
   // Pointer to device arrays
-  float *matX_d, *matY_d;
+  float *matX_d, *matY_d, *matX1_d, *matY1_d;
   float *matw1_d, *matw2_d, *matw3_d;
   float *vecb1_d, *vecb2_d, *vecb3_d;
 
   // size of matrix
   size_t size_matX  = N0 * Ns * sizeof(float);
   size_t size_matY  = N3 * Ns * sizeof(float);
+  size_t size_matX1  = N0 * Ntest * sizeof(float);
+  size_t size_matY1  = N3 * Ntest * sizeof(float);  
 
   size_t size_matw1 = N1 * N0 * sizeof(float);
   size_t size_matw2 = N2 * N1 * sizeof(float);
@@ -70,6 +74,8 @@ int main(void){
   // allocate on device
   cudaMalloc((void **) &matX_d, size_matX);
   cudaMalloc((void **) &matY_d, size_matY);
+  cudaMalloc((void **) &matX1_d, size_matX1);
+  cudaMalloc((void **) &matY1_d, size_matY1);
 
   cudaMalloc((void **) &matw1_d, size_matw1);
   cudaMalloc((void **) &matw2_d, size_matw2);
@@ -98,11 +104,9 @@ int main(void){
   std::cout << " b3 vector dims = (" << N3 << ")" << std::endl;
 
   // Initialize host array and copy it to CUDA device
-  // random_matrix(matX_h, N0, Ns, 0.0f);
-  // random_matrix(matY_h, N3, Ns, 0.0f);
 
   // read mnist data
-  read_mnist(matX_h, matY_h, x_train, x_test, y_test, y_train, N0, N3, Ntrain, Ntest);
+  read_mnist(matX_h, matY_h, matX1_h, matY1_h, x_train, x_test, y_test, y_train, N0, N3, Ntrain, Ntest);
 
   // print data
   int idx = 41576;
@@ -124,6 +128,8 @@ int main(void){
   // copy data from host to device
   cudaMemcpy(matX_d, matX_h, size_matX, cudaMemcpyHostToDevice);
   cudaMemcpy(matY_d, matY_h, size_matY, cudaMemcpyHostToDevice);
+  cudaMemcpy(matX1_d, matX1_h, size_matX1, cudaMemcpyHostToDevice);
+  cudaMemcpy(matY1_d, matY1_h, size_matY1, cudaMemcpyHostToDevice);  
 
   cudaMemcpy(matw1_d, matw1_h, size_matw1, cudaMemcpyHostToDevice);
   cudaMemcpy(matw2_d, matw2_h, size_matw2, cudaMemcpyHostToDevice);
@@ -142,7 +148,8 @@ int main(void){
   // forward propagation
   printf("computation start\n");
   // printf("b3= "); print_vector(vecb3_h, N3);
-  compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d, matY_d, matY_h, Ns, N0, N1, N2, N3);
+  compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d,  matY_d,  matY_h,  Ns,    N0, N1, N2, N3);
+  compute_nn(lr, 0,     matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX1_d, matY1_d, matY1_h, Ntest, N0, N1, N2, N3);
 
   // Retrieve result from device and store it in host array
   cudaMemcpy(matw1_h, matw1_d, size_matw1, cudaMemcpyDeviceToHost);
@@ -166,6 +173,8 @@ int main(void){
   // Cleanup
   delete [] matX_h;
   delete [] matY_h;
+  delete [] matX1_h;
+  delete [] matY1_h;  
   delete [] matw1_h;
   delete [] matw2_h;
   delete [] matw3_h;
@@ -179,6 +188,8 @@ int main(void){
 
   cudaFree(matX_d);
   cudaFree(matY_d);
+  cudaFree(matX1_d);
+  cudaFree(matY1_d);
   cudaFree(matw1_d);
   cudaFree(matw2_d);
   cudaFree(matw3_d);

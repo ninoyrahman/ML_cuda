@@ -51,7 +51,9 @@ void read_image(const char *filename, int *X, const int nfeat, const int nsample
  * @param Ntest[in] testing sample size 
  * @param Ntrain[in] training sample size
  */
-void read_mnist(float *X_h, float *Y_h, int *X_train, int *X_test, int *Y_test, int *Y_train, const int nfeat, const int nlabel, const int Ntrain, const int Ntest){
+void read_mnist(float *X_h, float *Y_h, float *X1_h, float *Y1_h, 
+    int *X_train, int *X_test, int *Y_test, int *Y_train, 
+    const int nfeat, const int nlabel, const int Ntrain, const int Ntest){
     read_image("data/x_train.txt", X_train, nfeat, Ntrain);
     read_image("data/y_train.txt", Y_train, 1, Ntrain);
 
@@ -69,5 +71,16 @@ void read_mnist(float *X_h, float *Y_h, int *X_train, int *X_test, int *Y_test, 
             Y_h[i * nlabel + j] = 0.0f;
             if (j == Y_train[i]) Y_h[i * nlabel + j] = 1.0f;
         }
-    }   
+    } 
+    
+    for (int i = 0; i < Ntest; i++){
+        for (int j = 0; j < nfeat; j++){
+            X1_h[i * nfeat + j] = (float)(X_test[i * nfeat + j] / 255.0f);
+        }
+        
+        for (int j = 0; j < nlabel; j++){
+            Y1_h[i * nlabel + j] = 0.0f;
+            if (j == Y_test[i]) Y1_h[i * nlabel + j] = 1.0f;
+        }
+    }     
 }
