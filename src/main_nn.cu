@@ -26,7 +26,7 @@ int main(void){
   const int Ntest  = 10000;
 
   float lr = 0.1; // learning rate
-  int epoch = 300;  // max iteration
+  int epoch = 1000;  // max iteration
 
   // allocate on host
 
@@ -150,6 +150,7 @@ int main(void){
   // printf("b3= "); print_vector(vecb3_h, N3);
   compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d,  matY_d,  matY_h,  Ns,    N0, N1, N2, N3);
   compute_nn(lr, 0,     matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX1_d, matY1_d, matY1_h, Ntest, N0, N1, N2, N3);
+  // test_gpu_mem(lr, epoch, N1, N2, Ns);
 
   // Retrieve result from device and store it in host array
   cudaMemcpy(matw1_h, matw1_d, size_matw1, cudaMemcpyDeviceToHost);

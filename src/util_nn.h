@@ -52,16 +52,12 @@ __global__ void clipping(float clip, float *a, int n){
     a[idx] = fminf(fmaxf(a[idx], -clip), clip);
 }
 
-float get_accuracy(const float *a3_d, const float *Y_h, const int N3, const int Ns){
+float get_accuracy(const float *a3_h, const float *Y_h, const int N3, const int Ns){
 
-    float *a3_h = new float[N3 * Ns];
     int idx_a3;
     int idx_Y;
     float acc = 0.0f;
     // int size = 5;
-
-    // copy from device to host
-    cudaMemcpy(a3_h, a3_d, N3 * Ns * sizeof(float), cudaMemcpyDeviceToHost);
     
     for (int col = 0; col < Ns; col++){
         idx_a3 = std::distance(a3_h + col * N3, std::max_element(a3_h + col * N3, a3_h + (col + 1) * N3 - 1));
@@ -70,7 +66,6 @@ float get_accuracy(const float *a3_d, const float *Y_h, const int N3, const int 
     }
     acc = acc / (float)Ns;
 
-    delete [] a3_h;
     return acc;
 }
 
@@ -92,7 +87,7 @@ float get_accuracy(const float *a3_d, const float *Y_h, const int N3, const int 
 void gradient_clipping(const float clip, float *dw1, float *dw2, float *dw3, float *db1, float *db2, float *db3,
     const int N0, const int N1, const int N2, const int N3){
 
-    dim3 threadsPerBlock(16);
+    dim3 threadsPerBlock(256);
     dim3 blocksPerGrid;
 
     blocksPerGrid.x = (int)ceil(N1 * N0 / threadsPerBlock.x);
@@ -131,6 +126,9 @@ void gradient_clipping(const float clip, float *dw1, float *dw2, float *dw3, flo
  * @param b2[in] biases at 2nd hidden layer 
  * @param b3[in] biases at output layer 
  * @param X[in] input feature
+ * @param Vone_d[in] one vector
+ * @param a3_h[out] activation output at output layer (host)
+ * @param a3_hd[out] activation output at output layer (host, double)
  * @param Ns[in] sample size
  * @param N0[in] feature size
  * @param N1[in] 1st hidden layer size
@@ -138,30 +136,17 @@ void gradient_clipping(const float clip, float *dw1, float *dw2, float *dw3, flo
  * @param N3[in] label size
  */
 void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, float *z3, 
-    const float *w1, const float *w2, const float *w3, const float *b1, const float *b2, const float *b3, const float *X, 
+    const float *w1, const float *w2, const float *w3, const float *b1, const float *b2, const float *b3, 
+    const float *X, const float *Vone_d, float *a3_h, double *a3_hd,
     const int Ns, const int N0, const int N1, const int N2, const int N3){
 
-    dim3 threadsPerBlock(16);
+    dim3 threadsPerBlock(256);
     dim3 blocksPerGrid;
 
     cublasStatus_t status;
     cublasHandle_t handle;
 
-    // Vone on host
-    float *Vone_h  = new float[Ns];
-    for (int i = 0; i < Ns; i++)
-        Vone_h[i] = 1.0f;
-    
-    // Vone on device
-    float *Vone_d;
-    size_t size_Vone = Ns * sizeof(float);
-    cudaMalloc((void **) &Vone_d, size_Vone);
-    cudaMemcpy(Vone_d, Vone_h, size_Vone, cudaMemcpyHostToDevice);
-
-    float *a3_h  = new float[N3 * Ns];
-    double *a3_hd = new double[N3 * Ns];
-
-    cublasCreate(&handle);    
+    cublasCreate(&handle);
 
     float alpha = 1.0f;
     float beta = 0.0f;
@@ -273,9 +258,8 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
     cudaMemcpy(a3, a3_h, N3 * Ns * sizeof(float), cudaMemcpyHostToDevice);
     // printf("a3: "); test_value(a3, N3, Ns);
 
-    // free memory
-    delete [] a3_h; delete [] a3_hd;
-    delete [] Vone_h; cudaFree(Vone_d);
+    cublasDestroy(handle);
+
 }
 
 /**
@@ -297,7 +281,15 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
  * @param z2[in] linear combination at 2nd hidden layer
  * @param z3[in] linear combination at output layer
  * @param X[in] features 
- * @param Y[in] labels 
+ * @param Y[in] labels
+ * @param Vone_d[in] one Vector
+ * @param delta[out] error at output layer
+ * @param delta1[out] error at 2nd hidden layer
+ * @param delta2[out] error at 1st hidden layer
+ * @param tmp1[out] temporary variable
+ * @param tmp2[out] temporary variable
+ * @param dz1[out] derivative of ReLU at 2nd hidden layer
+ * @param dz2[out] derivative of ReLU at 1st hidden layer
  * @param Ns[in] sample size
  * @param N0[in] feature size
  * @param N1[in] 1st hidden layer size
@@ -307,37 +299,17 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
 void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float *db2, float *db3,
     const float *w1, const float *w2, const float *w3,
     const float *a1, const float *a2, const float *a3, const float *z1, const float *z2, const float *z3,
-    const float *X, const float *Y,
+    const float *X, const float *Y, const float *Vone_d, 
+    float *delta, float *delta1, float *delta2,
+    float *tmp1, float *tmp2, float *dz1, float *dz2,
     const int Ns, const int N0, const int N1, const int N2, const int N3){
 
-    dim3 threadsPerBlock(16);
+    dim3 threadsPerBlock(256);
     dim3 blocksPerGrid;
     
     cublasStatus_t status;
     cublasHandle_t handle;
     cublasCreate(&handle);
-
-    float *delta, *delta1, *delta2;
-    float *tmp1, *tmp2, *dz1, *dz2; 
-
-    size_t size_a1 = N1 * Ns * sizeof(float);
-    size_t size_a2 = N2 * Ns * sizeof(float);
-    size_t size_a3 = N3 * Ns * sizeof(float);
-
-    cudaMalloc((void **) &delta,  size_a3);
-    cudaMalloc((void **) &delta1, size_a2); cudaMalloc((void **) &tmp1, size_a2); cudaMalloc((void **) &dz1, size_a2);
-    cudaMalloc((void **) &delta2, size_a1); cudaMalloc((void **) &tmp2, size_a1); cudaMalloc((void **) &dz2, size_a1);
-
-    // Vone on host
-    float *Vone_h  = new float[Ns];
-    for (int i = 0; i < Ns; i++)
-        Vone_h[i] = 1.0f;
-    
-    // Vone on device
-    float *Vone_d;
-    size_t size_Vone = Ns * sizeof(float);
-    cudaMalloc((void **) &Vone_d, size_Vone);
-    cudaMemcpy(Vone_d, Vone_h, size_Vone, cudaMemcpyHostToDevice);    
 
     float alpha;
     float beta;
@@ -488,10 +460,8 @@ void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float 
         printf("cublasSgemv db1[N1] = delta2[N1, Ns] * Vone[Ns] returned error code %d\n", status);
     // printf("db1: "); test_value(db1, N1);
 
-    delete [] Vone_h; cudaFree(Vone_d);
-    cudaFree(delta); cudaFree(delta1); cudaFree(delta2);
-    cudaFree(tmp1); cudaFree(tmp2);
-    cudaFree(dz1); cudaFree(dz2);
+    cublasDestroy(handle);
+
 }
 
 /**
@@ -502,7 +472,8 @@ void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float 
  * @param w3[out] weights at output layer
  * @param b1[out] biases at 1st hidden layer
  * @param b2[out] biases at 2nd hidden layer 
- * @param b3[out] biases at output layer 
+ * @param b3[out] biases at output layer
+ * @param lr learning rate
  * @param dw1[in] gradient of w1
  * @param dw2[in] gradient of w2 
  * @param dw3[in] gradient of w3
@@ -561,5 +532,7 @@ void update_parameter(float *w1, float *w2, float *w3, float *b1, float *b2, flo
     status = cublasSaxpy(handle, N3, &alpha, db3, 1, b3, 1);
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSaxpy b3[N3] = b3[N3] - alpha * db3[N3] returned error code %d\n", status);
+
+    cublasDestroy(handle);
 
 }
