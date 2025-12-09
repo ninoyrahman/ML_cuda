@@ -7,6 +7,7 @@
 #include "nn.h"
 #include "read.h"
 #include <algorithm>
+#include <iterator>
 
 // main routine that executes on the host
 int main(void){

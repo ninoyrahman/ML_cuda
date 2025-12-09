@@ -14,6 +14,7 @@
 #include <iostream>
 #include "math.h"
 #include <algorithm>
+#include <iterator>
 
 /**
  * @brief kernal for ReLU
