@@ -6,7 +6,7 @@
 #include "util.h"
 #include "nn.h"
 #include "read.h"
-// #include "test.h"
+#include <algorithm>
 
 // main routine that executes on the host
 int main(void){
