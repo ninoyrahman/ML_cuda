@@ -172,10 +172,6 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
         z1, N1); // A(m x n)=z1
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSger returned error code %d\n", status);
-    // printf("w1: "); test_value(w1, N1, N0);
-    // printf("X: "); test_value(X, N0, Ns);
-    // printf("b1: "); test_value(b1, N1, 1);
-    // printf("z1: "); test_value(z1, N1 * Ns);
 
     // a1[N1, Ns] = ReLU(z1[N1, Ns])
     blocksPerGrid.x = (int)ceil(N1 * Ns / threadsPerBlock.x);
@@ -199,10 +195,6 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
         z2, N2); // A(m x n)=z2
     if (status != CUBLAS_STATUS_SUCCESS)
         printf("cublasSger returned error code %d\n", status);
-    // printf("w2: "); test_value(w2, N2, N1);
-    // printf("a1: "); test_value(a1, N1, Ns);        
-    // printf("b2: "); test_value(b2, N2, 1);
-    // printf("z2: "); test_value(z2, N2 * Ns);
 
     // a2[N2, Ns] = ReLU(z2[N2, Ns])
     blocksPerGrid.x = (int)ceil(N2 * Ns / threadsPerBlock.x);
@@ -226,10 +218,6 @@ void forward_propagation(float *a1, float *a2, float *a3, float *z1, float *z2, 
         z3, N3); // A(m x n)=z3
     if (status != CUBLAS_STATUS_SUCCESS)
         printf("cublasSger returned error code %d\n", status);
-    // printf("w3: "); test_value(w3, N3, N2);
-    // printf("a2: "); test_value(a2, N2, Ns);
-    // printf("b3: "); test_value(b3, N3, 1);
-    // printf("z3: "); test_value(z3, N3 * Ns);
 
     // a3[N3, Ns] = softmax(z3[N3, Ns])
     cudaMemcpy(a3_h, z3, N3 * Ns * sizeof(float), cudaMemcpyDeviceToHost); // copy from device to host  
@@ -345,9 +333,6 @@ void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float 
         dw3, N3); // C(m x n)=dw3
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSgemm dw3[N3, N2] = delta[N3, Ns] * a2[N2, Ns].T returned error code %d\n", status);
-    // printf("delta: "); test_value(delta, N3 * Ns);
-    // printf("a2: "); test_value(a2, N2 * Ns);
-    // printf("dw3: "); test_value(dw3, N3 * N2);
     
     // db3[N3] = delta[N3, Ns].sum(column) = delta[N3, Ns] * Vone[Ns]
     status = cublasSgemv(handle, CUBLAS_OP_N,
@@ -359,7 +344,6 @@ void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float 
         db3, 1); // y(m)=db3
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSgemv db3[N3] = delta[N3, Ns].sum(column) = delta[N3, Ns] * Vone[Ns] returned error code %d\n", status);
-    // printf("db3: "); test_value(db3, N3);
     
     // delta1 = w3.T.dot(delta) * self.dReLU(z2)
     // tmp1[N2, Ns] = w3[N3, N2].T * delta[N3, Ns] 
@@ -395,9 +379,6 @@ void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float 
         dw2, N2); // C(m x n)=dw2
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSgemm dw2[N2, N1] = delta1[N2, Ns] * a1[N1, Ns].T returned error code %d\n", status);
-    // printf("delta1: "); test_value(delta1, N2 * Ns);
-    // printf("a1: "); test_value(a1, N1 * Ns);
-    // printf("dw2: "); test_value(dw2, N2 * N1);
 
     // db2[N2] = delta1[N2, Ns].sum(column) = delta1[N2, Ns] * Vone[Ns]
     status = cublasSgemv(handle, CUBLAS_OP_N,
@@ -409,7 +390,6 @@ void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float 
         db2, 1); // y(m)=db2
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSgemv db2[N2] = delta1[N2, Ns] * Vone[Ns] returned error code %d\n", status);
-    // printf("db2: "); test_value(db2, N2);
 
     // delta2 = w2.T.dot(delta1) * self.dReLU(z1)
     // tmp2[N1, Ns] = w2[N2, N1].T * delta1[N2, Ns]
@@ -445,9 +425,6 @@ void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float 
         dw1, N1); // C(m x n)=dw1
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSgemm dw1[N1, N0] = delta2[N1, Ns] * X[N0, Ns].T returned error code %d\n", status);
-    // printf("delta2: "); test_value(delta2, N1 * Ns);
-    // printf("X: "); test_value(X, N0 * Ns);
-    // printf("dw1: "); test_value(dw1, N1 * N0);
 
     // db1[N1] = delta2[N1, Ns].sum(column) = delta2[N1, Ns] * Vone[Ns]
     status = cublasSgemv(handle, CUBLAS_OP_N,
@@ -459,7 +436,6 @@ void backward_propagation(float *dw1, float *dw2, float *dw3, float *db1, float 
         db1, 1); // y(m)=db2
     if (status != CUBLAS_STATUS_SUCCESS)
         printf("cublasSgemv db1[N1] = delta2[N1, Ns] * Vone[Ns] returned error code %d\n", status);
-    // printf("db1: "); test_value(db1, N1);
 
     cublasDestroy(handle);
 
@@ -500,14 +476,12 @@ void update_parameter(float *w1, float *w2, float *w3, float *b1, float *b2, flo
 
     // printf("update\n");
 
-    // gradient_clipping(1.0f, dw1, dw2, dw3, db1, db2, db3, N0, N1, N2, N3);
-    // printf("w1: "); test_value(w1, N1 * N0);
+    gradient_clipping(1.0f, dw1, dw2, dw3, db1, db2, db3, N0, N1, N2, N3);
 
     // w1[N1, N0] = w1[N1, N0] - lr * dw1[N1, N0]
     status = cublasSaxpy(handle, N1 * N0, &alpha, dw1, 1, w1, 1);
     if (status != CUBLAS_STATUS_SUCCESS) 
         printf("cublasSaxpy w1[N1, N0] = w1[N1, N0] - lr * dw1[N1, N0] returned error code %d\n", status);
-    // printf("w1: "); test_value(w1, N1 * N0);
 
     // b1[N1] = b1[N1] - lr * db1[N1]
     status = cublasSaxpy(handle, N1, &alpha, db1, 1, b1, 1);
