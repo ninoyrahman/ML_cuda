@@ -19,8 +19,8 @@ int main(void){
   // matrix and vector size
   const int Ns = 60000;   // matB row/matA column number
   const int N0 = 784;  // matC row/matA row number
-  const int N1 = 256;  // matC column/matB column number
-  const int N2 = 128;  // matB row/matA column number
+  const int N1 = 2048;  // matC column/matB column number
+  const int N2 = 1024;  // matB row/matA column number
   const int N3 = 10;   // matB row/matA column number
 
   const int Ntrain = 60000;
@@ -28,6 +28,7 @@ int main(void){
 
   float lr = 0.01; // learning rate
   int epoch = 1000;  // max iteration
+  float accuracy = 0.9; // required accuracy
 
   // allocate on host
 
@@ -104,6 +105,10 @@ int main(void){
   std::cout << " b2 vector dims = (" << N2 << ")" << std::endl;
   std::cout << " b3 vector dims = (" << N3 << ")" << std::endl;
 
+  std::cout << " learning rate = " << lr << std::endl;
+  std::cout << " required accuracy = " << accuracy << std::endl;
+  std::cout << " max epoch = " << epoch << std::endl;
+
   // Initialize host array and copy it to CUDA device
 
   // read mnist data
@@ -148,8 +153,16 @@ int main(void){
 
   // forward propagation
   printf("computation start\n");
-  compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d,  matY_d,  matY_h,  Ns,    N0, N1, N2, N3);
-  compute_nn(lr, 0,     matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX1_d, matY1_d, matY1_h, Ntest, N0, N1, N2, N3);
+  
+  // std::cout << " training " << std::endl;
+  // compute_nn(lr, epoch, accuracy, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d,  matY_d,  matY_h,  Ns,    N0, N1, N2, N3);
+  // std::cout << "test ";
+  // compute_nn(lr, 0,     accuracy, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX1_d, matY1_d, matY1_h, Ntest, N0, N1, N2, N3);
+
+  std::cout << " training " << std::endl;
+  compute_nn_adam(lr, epoch, accuracy, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d,  matY_d,  matY_h,  Ns,    N0, N1, N2, N3);
+  std::cout << "test ";
+  compute_nn_adam(lr, 0,     accuracy, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX1_d, matY1_d, matY1_h, Ntest, N0, N1, N2, N3);
 
   // Retrieve result from device and store it in host array
   cudaMemcpy(matw1_h, matw1_d, size_matw1, cudaMemcpyDeviceToHost);
