@@ -148,10 +148,8 @@ int main(void){
 
   // forward propagation
   printf("computation start\n");
-  // printf("b3= "); print_vector(vecb3_h, N3);
   compute_nn(lr, epoch, matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX_d,  matY_d,  matY_h,  Ns,    N0, N1, N2, N3);
   compute_nn(lr, 0,     matw1_d, matw2_d, matw3_d, vecb1_d, vecb2_d, vecb3_d, matX1_d, matY1_d, matY1_h, Ntest, N0, N1, N2, N3);
-  // test_gpu_mem(lr, epoch, N1, N2, Ns);
 
   // Retrieve result from device and store it in host array
   cudaMemcpy(matw1_h, matw1_d, size_matw1, cudaMemcpyDeviceToHost);
@@ -161,10 +159,6 @@ int main(void){
   cudaMemcpy(vecb1_h, vecb1_d, size_vecb1, cudaMemcpyDeviceToHost);
   cudaMemcpy(vecb2_h, vecb2_d, size_vecb2, cudaMemcpyDeviceToHost);
   cudaMemcpy(vecb3_h, vecb3_d, size_vecb3, cudaMemcpyDeviceToHost);
-
-  // Print results
-  // printf("b3= "); print_vector(vecb3_h, N3);
-  // print_matrix(matw3_h, N3, N2);
 
   printf("computation end\n");
 
