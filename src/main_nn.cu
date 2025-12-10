@@ -6,7 +6,8 @@
 #include "util.h"
 #include "nn.h"
 #include "read.h"
-// #include "test.h"
+#include <algorithm>
+#include <iterator>
 
 // main routine that executes on the host
 int main(void){
@@ -25,7 +26,7 @@ int main(void){
   const int Ntrain = 60000;
   const int Ntest  = 10000;
 
-  float lr = 0.1; // learning rate
+  float lr = 0.01; // learning rate
   int epoch = 1000;  // max iteration
 
   // allocate on host

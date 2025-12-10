@@ -13,7 +13,8 @@
 #include "cublas_v2.h"
 #include <iostream>
 #include "math.h"
-// #include "test.h"
+#include <algorithm>
+#include <iterator>
 
 /**
  * @brief kernal for ReLU
