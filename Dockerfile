@@ -11,9 +11,7 @@ RUN apt-get update --fix-missing && \
 
 RUN git clone https://github.com/ninoyrahman/ML_cuda.git
 WORKDIR /ML_cuda/
-RUN git pull && \
-    unzip data.zip -d /ML_cuda/data/ && \
-    nvcc -g -arch=sm_75 src/main_nn.cu -o main -lcublas
 
-CMD [ "./main" ]
+CMD [ "sh", "-c", "git pull && unzip -o data.zip -d /ML_cuda/data/ && nvcc -g -arch=sm_75 src/main_nn.cu -o main -lcublas && ./main" ]
+# CMD [ "./main" ]
 # CMD [ "sleep", "infinity" ]
