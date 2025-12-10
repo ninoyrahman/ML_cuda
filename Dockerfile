@@ -15,5 +15,5 @@ RUN git pull && \
     unzip data.zip -d /ML_cuda/data/ && \
     nvcc -g -arch=sm_75 src/main_nn.cu -o main -lcublas
 
-# CMD [ "main.exe" ]
-CMD [ "sleep", "infinity" ]
+CMD [ "./main" ]
+# CMD [ "sleep", "infinity" ]
